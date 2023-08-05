@@ -1,0 +1,33 @@
+Vagrant.configure(2) do | config |
+    config.vm.define "ansisblecontrolnode" do | acn |
+        acn.vm.box="nazeerbasha/ubuntu-22.04.1" #my own boc
+        acn.vm.network "private_network", ip: "192.168.10.10", virtualbox_intnet: "ansible network"
+        #acn.vm.boot_timeout = 600
+        acn.vm.provider "virtualbox" do | vb |
+            vb.name="ansiblecontrolnode"
+            vb.cpus=2
+            vb.memory=3072
+            vb.gui=true
+            
+        end
+        # provisioner block
+        acn.vm.provision "ansible pv key", type: "file", source: "security/ansible", destination: "/home/vagrant/.ssh/"
+        acn.vm.provision "setup ansiblecontrolnode", type: "shell", path: "provisioners/setupcontrolnode.sh"
+    end
+    (1..2).each do | index |
+        config.vm.define "ansible manage node#{index}" do | node |
+        # config.vm.boot_timeout= 600
+            node.vm.box="ubuntu/focal64"
+            node.vm.network "forwarded_port", guest: 8080, host: 80
+            node.vm.network "public_network", ip: "192.168.10.#{index+10}", virtualbox_intnet: "ansible network"
+            node.vm.provider "virtualbox" do  | vb |
+                vb.name="ansible_manage_node#{index}"
+                vb.cpus=2
+                vb.memory=2024
+            end
+            node.vm.provision "setupmanage node ", type: "shell", path: "provisioners/setupmanagenode.sh"
+        end
+
+    end
+
+end
